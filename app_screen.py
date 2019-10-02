@@ -75,30 +75,42 @@ def config_screen_start():
 
 @application.route('/scr_config', methods=['GET', 'POST'])
 def config_screen():
-    df = pd.DataFrame(columns=["Field" , "X", 'Y'])
     print(request.args['up_file'])
     up_file = request.args['up_file']
+    df_field = pd.DataFrame(columns=["Field","Position"])
+    df_coord = pd.DataFrame(columns=["Coord_X","Coord_Y", "Position"])
+    df_maxxy = pd.DataFrame(columns=["Field", "Coord_X","Coord_Y"])
     if request.method == 'POST':
         print 'inside post'
+        #print request.form['field1']
         # item_coor = request.form['item']
         # print item_coor
         # price_coor = request.form['price']
         # qty_coor = request.form['qty']
         # amount_coor = request.form['amount']
+
+        f = request.form
         for field in request.form.items():
-            #field.name + '_coor'=field.value
-            print field[1]
-            df = df.append({ 'Field': field[0], 'X': field[1].split(';')[0], 'Y': field[1].split(';')[1]},
-                           ignore_index=True)
-            #print item_coor_x
-        df["X"] = df["X"].astype(int)
-        df["Y"] = df["Y"].astype(int)
-        print df.dtypes
-        df = df.sort_values(by=['X']).reset_index().drop(labels='index',axis=1)
+            if field[0].startswith('field'):
+                df_field = df_field.append({'Field': field[1],'Position': int(field[0][5:]) },ignore_index=True)
+            if field[0].startswith('coord'):
+                df_coord = df_coord.append({'Coord_X': int(field[1].split(';')[0]),'Coord_Y': int(field[1].split(';')[1]), 'Position': int(field[0][5:])}, ignore_index=True)
+
+
+        print 'df_field',df_field
+        print 'df_coord', df_coord
+        print 'df_maxxy',df_maxxy
+        df = pd.merge(df_field, df_coord, how='inner',  left_on = 'Position', right_on = 'Position')
+
+        for field in request.form.items():
+            if field[0].startswith('maxxy'):
+                df = df.append({'Field':'maxxy','Coord_X': int(field[1].split(';')[0]),'Coord_Y': int(field[1].split(';')[1])}, ignore_index=True)
+        # df["Position"] = df["Position"].astype(int)
+        # df["Y"] = df["Y"].astype(int)
+        print 'df',df
+        df = df.sort_values(by=['Position']).reset_index().drop(labels=['Position','index'],axis=1)
         print 'df', df
-        #print (df.iloc[0][2], df.iloc[1][2],df.iloc[2][2], df.iloc[3][2])
-        #df_coords=df.iloc[:,1]
-        #df_coords=df_coords.to_frame()
+
         up_file=UPLOAD_FOLDER+up_file
         print up_file
         img_to_csv.main( df,up_file)
