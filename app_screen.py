@@ -112,7 +112,7 @@ def config_screen():
         print 'df', df
 
         up_file=UPLOAD_FOLDER+up_file
-        print up_file
+        df.to_csv(pd.DataFrame.to_csv(df,'/home/selva/PycharmProjects/BillDog/CSV/templates/img_template.csv'))
         img_to_csv.main( df,up_file)
         return render_template('upload_img.html')
     return render_template('screen_config.html')
