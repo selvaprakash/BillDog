@@ -1,89 +1,7 @@
 <html>
     <head>
         <h2>Configure your Billing Screen</h2>
-        <style>
-                body {font-family: Arial, Helvetica, sans-serif;}
-                * {box-sizing: border-box;}
-        /* Button used to open the contact form - fixed at the bottom of the page */
-.open-button {
-  background-color: #555;
-  color: white;
-  padding: 16px 20px;
-  border: none;
-  cursor: pointer;
-  opacity: 0.8;
-  position: fixed;
-  bottom: 23px;
-  right: 28px;
-  width: 280px;
-}
-
-/* The popup form - hidden by default */
-.form-popup {
-  display: block;
-  position: absolute;
-  cursor: move;
-  top: 200;
-  bottom: 0;
-  right: 15px;
-  border: 3px solid #f1f1f1;
-  z-index: 9;
-}
-
-
-#form-header {
-  padding: 10px;
-  max-width: 300px;
-  cursor: move;
-  z-index: 10;
-  background-color: #2196F3;
-  color: #fff;
-}
-/* Add styles to the form container */
-.form-container {
-  max-width: 300px;
-  padding: 10px;
-  background-color: white;
-}
-
-/* Full-width input fields */
-.form-container input[type=text], .form-container input[type=password] {
-  width: 100%;
-  padding: 15px;
-  margin: 5px 0 22px 0;
-  border: none;
-  background: #f1f1f1;
-}
-
-/* When the inputs get focus, do something */
-.form-container input[type=text]:focus, .form-container input[type=password]:focus {
-  background-color: #ddd;
-  outline: none;
-}
-
-/* Set a style for the submit/login button */
-.form-container .btn {
-  background-color: #4CAF50;
-  color: white;
-  padding: 16px 20px;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  margin-bottom:10px;
-  opacity: 0.8;
-}
-
-/* Add a red background color to the cancel button */
-.form-container .cancel {
-  background-color: red;
-}
-
-/* Add some hover effects to buttons */
-.form-container .btn:hover, .open-button:hover {
-  opacity: 1;
-}
-</style>
-
+        <link rel="stylesheet" type="text/css" href="/static/styles.css">
     </head>
 <body>
     <img  alt="My Image" ismap" id='backImg'>
@@ -106,6 +24,12 @@
     <script type="text/javascript">
 
     $(document).ready(function() {
+        // $("coord1").on("focus",function()
+        // {
+        //   console.log("coord1");
+        //   focusedId="coord1";
+
+        // });
         $("img").on("click", function(event) {
             var x = event.pageX - this.offsetLeft;
             var y = event.pageY - this.offsetTop;
@@ -115,6 +39,67 @@
             //alert("X Coordinate: " + x + " Y Coordinate: " + y);
         }); 
     });
+
+    function addFields(){
+            var number = document.getElementById("member").value;
+            //var number=4;
+            var container = document.getElementById("form-container");
+            while (container.hasChildNodes()) {
+                container.removeChild(container.lastChild);
+            }
+            for (i=1;i<=number;i++){
+                container.appendChild(document.createTextNode("Field " + (i)));
+                var input1 = document.createElement("input");
+                input1.type = "text";
+                input1.id="field"+i.toString();
+                input1.name = "field"+i.toString();
+                console.log(input1.id)
+                container.appendChild(input1);
+                container.appendChild(document.createTextNode("  Position " + (i)));
+                var input2 = document.createElement("input");
+                input2.type = "text";
+                input2.id="coord"+i.toString();
+                input2.name="coord"+i.toString();
+                console.log(input2.id)
+                input2.addEventListener("focus", focusFunction, true);
+                container.appendChild(input2);
+                container.appendChild(document.createElement("br"));
+            }
+                container.appendChild(document.createTextNode("Max XY "));
+                var input3 = document.createElement("input");
+                input3.type = "text";
+                input3.id="maxxy";
+                input3.name = "maxxy";
+                input3.addEventListener("focus", focusFunction, true);
+                container.appendChild(input3);
+                container.appendChild(document.createElement("br"));
+                fillvalues();
+            
+        }
+
+    // function setFocus(number)
+    // {
+    //   for (i=1;i<=number;i++){
+    //     var x = document.getElementById("coord"+i.toString())
+    //     // setTimeout("document.getElementById('" + objField.id + "').focus()", 10); // works great in all browsers
+    //     x.onfocus=focusFunction();
+
+    //   }
+
+    // }
+    function fillvalues()
+    {
+      document.getElementById('member').defaultValue= 4;    
+      document.getElementById('field1').defaultValue="Item";    
+      document.getElementById('field2').defaultValue="Price";    
+      document.getElementById('field3').defaultValue="Qty";    
+      document.getElementById('field4').defaultValue="Amt";    
+      document.getElementById('coord1').defaultValue="83;159";    
+      document.getElementById('coord2').defaultValue="165;162";    
+      document.getElementById('coord3').defaultValue="249;161";    
+      document.getElementById('coord4').defaultValue="329;161";    
+      document.getElementById('maxxy').defaultValue="413;213";  
+    }
     </script>
 
 <body>
@@ -127,23 +112,13 @@
   <form method=post class="form-container">
     <h1>Set Co-Ordinates</h1>
 
-    <label for="field1"><b>First Column</b></label>
-    <input type="text" placeholder="0" name="item" id="item" onfocus="focusFunction(this.id)" required>
-
-    <label for="field2"><b>Second Column</b></label>
-    <input type="text" placeholder="0" name="price" id="price" onfocus="focusFunction(this.id)" required>
-
-    <label for="field3"><b>Third Column</b></label>
-    <input type="text" placeholder="0" name="qty" id="qty" onfocus="focusFunction(this.id)" required>
-
-    <label for="field4"><b>Fourth </b></label>
-    <input type="text" placeholder="0" name="amount" id="amount" onfocus="focusFunction(this.id)"required>
-
-    <label for="maxxy"><b>End XY</b></label>
-    <input type="text" placeholder="0" name="maxxy" id="maxxy" onfocus="focusFunction(this.id)"required>
+    <input type="text" id="member" name="member" value="">&nbsp&nbsp&nbspNumber of members: (max. 10)<br />
+<a href="#" id="filldetails" onclick="addFields()">Fill Details</a>
+      <div id="form-container"></div>
 
     <button type="submit" class="btn">Set Co-Ordinates</button>
     <button type="button" class="btn cancel" onclick="closeForm()">Close</button>
+
   </form>
 </div>
 
@@ -156,8 +131,10 @@ function closeForm() {
   document.getElementById("headerForm").style.display = "none";
 }
 
-function focusFunction(id) {
-{focusedId=id}
+function focusFunction() {
+  console.log('inside focusfunc')
+  console.log(this.id)
+focusedId=this.id
 };
 
 dragElement(document.getElementById("headerForm"));
