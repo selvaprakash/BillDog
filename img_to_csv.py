@@ -129,14 +129,17 @@ def detect_text_uri(path): # User Google API to detect Text in the Image
     #print('Texts:')
     #print texts
     ind=0
-    for text in texts:
+    for text, i in zip(texts, range(1, len(texts))):
 
 			# Send the same to Data Frame to be sent for Processing
-			df=df.append({'Word':(text.description).encode('utf-8'),"X":format(text.bounding_poly.vertices[0].x),"Y":format(text.bounding_poly.vertices[0].y)},ignore_index=True)
+			df=df.append({'Word_Count':i,'Word':(text.description).encode('utf-8').strip(),'X2':0,'Y2':0,"X1":format(text.bounding_poly.vertices[0].x),"Y1":format(text.bounding_poly.vertices[0].y)},ignore_index=True)
+			df=df.append({'Word_Count':i,'Word':(text.description).encode('utf-8').strip(),'X1':0,'Y1':0,"X2":format(text.bounding_poly.vertices[1].x),"Y2":format(text.bounding_poly.vertices[1].y)},ignore_index=True)
+    df1=df.groupby(['Word_Count','Word']).max()
 
-    print df
-    df.to_csv('/home/selva/PycharmProjects/BillDog/CSV/df.csv',sep='|')
-    return df
+
+#    print 'df1', df1
+    df1.to_csv('/home/selva/PycharmProjects/BillDog/CSV/df.csv',sep='|')
+    return df1
 
 def process_text(df1,min_x,max_x,min_y,max_y,df_coords,df_fields):
 
@@ -145,83 +148,85 @@ def process_text(df1,min_x,max_x,min_y,max_y,df_coords,df_fields):
     #print 'df',df
 
     ####
-    dfy2 = pd.to_numeric(df['Y'])
+    dfy2 = pd.to_numeric(df['Y1'])
     dfy2 = dfy2.to_frame()
-    dfy2.sort_values('Y', inplace=True)
+    dfy2.sort_values('Y1', inplace=True)
     for i in range(0, len(dfy2)):
         if abs(dfy2.iloc[i, 0] - dfy2.iloc[i - 1, 0]) <= 10:
             dfy2.iloc[i, 0] = dfy2.iloc[i - 1, 0]
             # print df.iloc[i,0]
     #print 'dfy2', dfy2
-    df['Y'] = dfy2['Y']
+    df['Y1'] = dfy2['Y1']
     ####
 
-    df = df.loc[(df['Y']).astype(int) > min_y]
+    df = df.loc[(df['Y1']).astype(int) > min_y]
 
-    df = df.loc[(df['Y']).astype(int) < max_y]
-    df = df[['Word', 'X', 'Y']]
+    df = df.loc[(df['Y1']).astype(int) < max_y].reset_index()
+    print df
+    df = df[['Word', 'X1', 'Y1', 'X2', 'Y2']]
     df = df.reset_index().drop(labels='index',axis=1)
-    df_c = df[['Word', 'X', 'Y']]
+    # df_c = df[['Word', 'X', 'Y']]
     #print df
 
-    df['X']=pd.to_numeric(df['X'])
+    df['X1']=pd.to_numeric(df['X1'])
+    df['X2'] = pd.to_numeric(df['X2'])
     int_array={}
-    int_df=pd.DataFrame( columns=["Word","X","Y"])
-    print 'df ', df
-    df_c = df.groupby('Y')['Word'].apply(lambda x: "{%s}" % ' '.join(x))
-    print ('df_c', df_c)
-    print 'len',len(df_coords)
+    int_df=pd.DataFrame( columns=["Word",  'Y1'])
+    #print 'df ', df
+    # df_c = df.groupby('Y1')['Word'].apply(lambda x: "{%s}" % ' '.join(x))
+    # print ('df_c', df_c)
+    # print 'len',len(df_coords)
+    print 'df cords',df_coords
     for i in range(len(df_coords)):
-        if i == 0:
-            df_filter = (df.loc[(df.X >= df_coords[i]) & (df.X <= df_coords[i + 1] - 1)])
+        #if i == 0:
+            df_filter = (df.loc[(df.X1 >= df_coords['Start_X'].iloc[i]) & (df.X2 <= df_coords['End_X'].iloc[i] )])
             print 'df_filter 0', df_filter
-            int_df = (df_filter.iloc[:,0:3])
-            int_df = int_df.groupby(['Y'])['Word'].apply(' '.join).reset_index()
+            int_df1 = (df_filter[['Word','Y1']])
+            int_df1 = int_df1.groupby(['Y1'])['Word'].apply(' '.join).reset_index()
             print 'int df grouped', int_df
+            int_df = int_df.merge(int_df1, how='right', on="Y1", suffixes=('_l_'+str(i),'_r_'+str(i)))
+
+            #int_df = int_df.drop('Word_x', axis='columns')
+    #     int_df1=int_df1.groupby(['Y'])['Word'].apply(' '.join).reset_index()
+    #     int_df = int_df.merge(int_df1, how='outer', on ="Y")
             # int_df.rename(columns={"Word":df.iloc[i].loc['Field']},
             #                inplace=True)
-        elif i < len(df_coords)-1:
-            print df_coords[i],df_coords[i+1]
-            print (df.loc[(df.X >= df_coords[i]) & (df.X <= df_coords[i+1] - 1)])
-            #for j in range(len(df)):
-            df_filter = (df.loc[(df.X > df_coords[i]) & (df.X < df_coords[i + 1] - 1)])
-            print 'df_filter i', df_filter
-            #int_array[str(i)] = (df_filter.iloc[:,0:3])
-            int_df1 = (df_filter.iloc[:,0:3])
-            # int_df1.rename(columns={"Word":df.iloc[i].loc['Field']},
-            #                inplace=True)
-            int_df1=int_df1.groupby(['Y'])['Word'].apply(' '.join).reset_index()
-            int_df = int_df.merge(int_df1, how='outer', on ="Y")
-
-                #print 'worked'
-            #int_array[i].append(np.array(df.loc[(df.X > df_coords[i]) & (df.X < df_coords[i+1] - 1)]))
-        else:
-            print 'max ',df_coords[i], max_x
-            df_filter= (df.loc[(df.X >= df_coords[i]) & (df.X <= max_x)])
-            #int_array[str(i)] = (df_filter.iloc[i, 0])
-            int_df1 = (df_filter.iloc[:,0:3])
-            # int_df1.rename(columns={"Word":df.iloc[i].loc['Field']},
-            #      inplace=True)
-            int_df1 = int_df1.groupby(['Y'])['Word'].apply(' '.join).reset_index()
-
-            int_df = int_df.merge(int_df1, how='outer',on ="Y")
+        # elif i < len(df_coords)-1:
+        #     print df_coords[i],df_coords[i+1]
+        #     print (df.loc[(df.X >= df_coords[i,'Start_X']) & (df.X <= df_coords[i,'End_X'] - 1)])
+        #     df_filter = (df.loc[(df.X > df_coords[i]) & (df.X < df_coords[i + 1] - 1)])
+        #     print 'df_filter i', df_filter
+        #     int_df1 = (df_filter.iloc[:,0:3])
+        #     int_df1=int_df1.groupby(['Y'])['Word'].apply(' '.join).reset_index()
+        #     int_df = int_df.merge(int_df1, how='outer', on ="Y")
+        #
+        # else:
+        #     print 'max ',df_coords[i,'Start_X'], max_x
+        #     df_filter= (df.loc[(df.X >= df_coords[i]) & (df.X <= max_x)])
+        #     int_df1 = (df_filter.iloc[:,0:3])
+        #
+        #     int_df1 = int_df1.groupby(['Y'])['Word'].apply(' '.join).reset_index()
+        #
+        #     int_df = int_df.merge(int_df1, how='outer',on ="Y")
         #int_array.update(int_array[i])
         #print 'int_array i', int_array
-        print 'int df', int_df
+            print 'int df2', int_df
         #df_c = df_c.groupby('Y')['Word'].apply(lambda x: "{%s}" % ' '.join(x))
     #int_df=pd.DataFrame.from_dict(int_array,orient='index')
     #print df_c
     print 'int_array final', int_df
 
-    int_df_print = int_df.drop(columns= ['Y'])
-    int_df_print.columns = df_fields
-    print 'Printed DF', int_df_print
+    int_df = int_df.reset_index()
+    int_df_print = int_df.drop(['Word_l_0','Y1','index'],axis='columns')
+    print(int_df_print.columns )
+    print 'Printed DF', int_df.reset_index()
+    print 'df print',int_df_print
 
     pd.DataFrame.to_csv(int_df_print,'/home/selva/PycharmProjects/BillDog/CSV/int_df_print.csv')
 
     print('Done! Done! Done!')
 
-def main(df_coords,inp_file):
+def main(df_coords1,inp_file):
     df = pd.DataFrame( columns=["Word","X","Y"])
     #y_start_end=find_bound_coor('/home/selva/BillDog/ExcelBill.png')
     df1=detect_text_uri(inp_file)
@@ -233,15 +238,17 @@ def main(df_coords,inp_file):
 
     #df_coords.astype('int32').sort_values()
 
+    df_coords=pd.read_csv('/home/selva/PycharmProjects/BillDog/CSV/templates/img_template.csv')
+    print 'target ', df_coords[['Field','Start_X','End_X','Start_Y']]
 
-    print 'df_coords',df_coords
-    min_x=df_coords['Coord_X'].min()
-    min_y = df_coords['Coord_Y'].min()
-    max_x= df_coords['Coord_X'].max()
-    max_y= df_coords['Coord_Y'].max()
+    min_x=df_coords['Start_X'].min()
+    min_y = df_coords['Start_Y'].min()
+    max_x= df_coords['End_X'].max()
+    max_y= df_coords['End_Y'].max()
     print 'min max coords', min_x,max_x,min_y,max_y
     df_coords = (df_coords.loc[(df_coords.Field != 'maxxy')])
-    process_text(df1,min_x,max_x,min_y,max_y,df_coords.iloc[:,1],df_coords.iloc[:,0])
+    process_text(df1,min_x,max_x,min_y,max_y,df_coords[['Field','Start_X','End_X','Start_Y']],df_coords.iloc[:,0])
+
 
 # if __name__ == '__main__':
 #     main(item_x,qty_x,price_x,amt_x)
